@@ -1,0 +1,399 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semester Average Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2rem;
+        }
+
+        .module-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .module {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+
+        .module h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .input-field {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        label {
+            display: block;
+            color: #555;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        input:invalid {
+            border-color: #dc3545;
+        }
+
+        .calculate-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 20px;
+        }
+
+        .calculate-btn:hover {
+            background: #0056b3;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 1.1rem;
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .input-field {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Semester Average Calculator By Islem :></h1>
+        <div class="module-grid">
+            <div class="module">
+                <h3>Analyse (Coefficient: 4)</h3>
+                <div class="input-group">
+                    <div class="input-field">
+                        <label for="analyse-td">TD (/20)</label>
+                        <input type="number" id="analyse-td" min="0" max="20" step="1">
+                    </div>
+                    <div class="input-field">
+                        <label for="analyse-exam">Exam (/20)</label>
+                        <input type="number" id="analyse-exam" min="0" max="20" step="1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="module">
+                <h3>ASD (Coefficient: 4)</h3>
+                <div class="input-group">
+                    <div class="input-field">
+                        <label for="asd-td">TD (/20)</label>
+                        <input type="number" id="asd-td" min="0" max="20" step="1">
+                    </div>
+                    <div class="input-field">
+                        <label for="asd-tp">TP (/20)</label>
+                        <input type="number" id="asd-tp" min="0" max="20" step="1">
+                    </div>
+                    <div class="input-field">
+                        <label for="asd-exam">Exam (/20)</label>
+                        <input type="number" id="asd-exam" min="0" max="20" step="1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="module">
+                <h3>Structure Machine (Coefficient: 2)</h3>
+                <div class="input-group">
+                    <div class="input-field">
+                        <label for="sm-td">TD (/20)</label>
+                        <input type="number" id="sm-td" min="0" max="20" step="1">
+                    </div>
+                    <div class="input-field">
+                        <label for="sm-exam">Exam (/20)</label>
+                        <input type="number" id="sm-exam" min="0" max="20" step="1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="module">
+                <h3>Algebre (Coefficient: 2)</h3>
+                <div class="input-group">
+                    <div class="input-field">
+                        <label for="algebre-td">TD (/20)</label>
+                        <input type="number" id="algebre-td" min="0" max="20" step="1">
+                    </div>
+                    <div class="input-field">
+                        <label for="algebre-exam">Exam (/20)</label>
+                        <input type="number" id="algebre-exam" min="0" max="20" step="1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="module">
+                <h3>IPSD (Coefficient: 2)</h3>
+                <div class="input-group">
+                    <div class="input-field">
+                        <label for="ipsd-td">TD (/20)</label>
+                        <input type="number" id="ipsd-td" min="0" max="20" step="1">
+                    </div>
+                    <div class="input-field">
+                        <label for="ipsd-exam">Exam (/20)</label>
+                        <input type="number" id="ipsd-exam" min="0" max="20" step="1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="module">
+                <h3>OPM (Coefficient: 2)</h3>
+                <div class="input-group">
+                    <div class="input-field">
+                        <label for="opm-tp">TP (/20)</label>
+                        <input type="number" id="opm-tp" min="0" max="20" step="0.01">
+                    </div>
+                    <div class="input-field">
+                        <label for="opm-exam">Exam (/20)</label>
+                        <input type="number" id="opm-exam" min="0" max="20" step="0.01">
+                    </div>
+                </div>
+            </div>
+
+            <div class="module">
+                <h3>TIC (Coefficient: 1)</h3>
+                <div class="input-group">
+                    <div class="input-field">
+                        <label for="tic-exam">Exam (/20)</label>
+                        <input type="number" id="tic-exam" min="0" max="20" step="0.01">
+                    </div>
+                </div>
+            </div>
+
+            <div class="module">
+                <h3>Physique (Coefficient: 2)</h3>
+                <div class="input-group">
+                    <div class="input-field">
+                        <label for="physique-td">TD (/20)</label>
+                        <input type="number" id="physique-td" min="0" max="20" step="0.01">
+                    </div>
+                    <div class="input-field">
+                        <label for="physique-exam">Exam (/20)</label>
+                        <input type="number" id="physique-exam" min="0" max="20" step="0.01">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="calculate-btn" onclick="calculateAverage()">Calculate Semester Average</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function calculateAverage() {
+            const modules = [
+                {
+                    name: 'Analyse',
+                    coefficient: 4,
+                    td: parseFloat(document.getElementById('analyse-td').value),
+                    exam: parseFloat(document.getElementById('analyse-exam').value)
+                },
+                {
+                    name: 'ASD',
+                    coefficient: 4,
+                    td: parseFloat(document.getElementById('asd-td').value),
+                    tp: parseFloat(document.getElementById('asd-tp').value),
+                    exam: parseFloat(document.getElementById('asd-exam').value)
+                },
+                {
+                    name: 'Structure Machine',
+                    coefficient: 2,
+                    td: parseFloat(document.getElementById('sm-td').value),
+                    exam: parseFloat(document.getElementById('sm-exam').value)
+                },
+                {
+                    name: 'Algebre',
+                    coefficient: 2,
+                    td: parseFloat(document.getElementById('algebre-td').value),
+                    exam: parseFloat(document.getElementById('algebre-exam').value)
+                },
+                {
+                    name: 'IPSD',
+                    coefficient: 2,
+                    td: parseFloat(document.getElementById('ipsd-td').value),
+                    exam: parseFloat(document.getElementById('ipsd-exam').value)
+                },
+                {
+                    name: 'OPM',
+                    coefficient: 2,
+                    tp: parseFloat(document.getElementById('opm-tp').value),
+                    exam: parseFloat(document.getElementById('opm-exam').value)
+                },
+                {
+                    name: 'TIC',
+                    coefficient: 1,
+                    exam: parseFloat(document.getElementById('tic-exam').value)
+                },
+                {
+                    name: 'Physique',
+                    coefficient: 2,
+                    td: parseFloat(document.getElementById('physique-td').value),
+                    exam: parseFloat(document.getElementById('physique-exam').value)
+                }
+            ];
+
+            let totalWeightedSum = 0;
+            let totalCoefficients = 0;
+            let resultText = '';
+
+            for (const module of modules) {
+                let moduleAverage = 0;
+                const { coefficient, td, tp, exam } = module;
+
+                // Validate inputs
+                if ((td !== undefined && (isNaN(td) || td < 0 || td > 20)) ||
+                    (tp !== undefined && (isNaN(tp) || tp < 0 || tp > 20)) ||
+                    (exam !== undefined && (isNaN(exam) || exam < 0 || exam > 20))) {
+                    alert(`Please enter valid marks (0-20) for ${module.name}`);
+                    return;
+                }
+
+                if (td !== undefined && tp !== undefined) {
+                    // Module has both TD and TP
+                    moduleAverage = ((td + tp) / 2) * 0.4 + exam * 0.6;
+                } else if (td !== undefined) {
+                    // Module has TD only
+                    moduleAverage = td * 0.4 + exam * 0.6;
+                } else if (tp !== undefined) {
+                    // Module has TP only
+                    moduleAverage = tp * 0.4 + exam * 0.6;
+                } else {
+                    // Module has only exam
+                    moduleAverage = exam;
+                }
+
+                totalWeightedSum += moduleAverage * coefficient;
+                totalCoefficients += coefficient;
+
+                resultText += `${module.name}: ${moduleAverage.toFixed(2)}<br>`;
+            }
+
+            const semesterAverage = totalWeightedSum / totalCoefficients;
+            if(semesterAverage >= 10) {
+                resultText += `<br><strong>Sahith bl3 b ${semesterAverage.toFixed(2)}</strong>`;
+            } else {
+                resultText += `<br><strong>Jbt ${semesterAverage.toFixed(2)} bsh fiha khir inshallah.</strong>`;
+            }
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = resultText;
+            resultDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
